@@ -62,6 +62,21 @@ fleet standard established in
   sidecar about the proxy rather than asking Dozzle, which cannot be asked.
   The first draft used the Dozzle image for the init container and failed with
   `stat /bin/sh: no such file or directory`.
+- **A literal `$$` inside an unquoted heredoc is the shell's PID.** The CI
+  step that writes the test `.env` substitutes the bcrypt hash into the script
+  with `${{ … }}`, so bash saw the text `$$2a$$11$$…` — doubled for Compose —
+  inside a heredoc that has to stay unquoted because other variables in it must
+  expand. Every `$$` became the process id, and Dozzle refused the password
+  against a user file that looked entirely plausible. The credential lines are
+  appended with `printf '%s'` from an environment variable now, and the step
+  asserts the written value still starts with a doubled bcrypt prefix.
+- **`/info` has to be on the proxy's allow-list, and leaving it off fails
+  quietly.** Without it Dozzle reports the host as `available: false` with no
+  CPU count, no memory figure and no daemon version — while the very next log
+  line still says "Connected to Docker". The first version of this template
+  shipped that way and nothing in CI noticed, because every assertion was about
+  what the proxy answered rather than about what Dozzle made of it. There is
+  one about that now.
 - **Dozzle's container tags carry the leading `v`** (`v10.10.0`), unlike most
   of this fleet. The freshness check compares the git tag as it comes rather
   than stripping it.

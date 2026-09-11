@@ -235,6 +235,9 @@ jobs:
           echo "hash=$(printf '%s' "$hash" | sed 's/\$/$$/g')" >> "$GITHUB_OUTPUT"
 
       - name: Generate test .env with ephemeral credentials
+        env:
+          DOZZLE_TEST_USER: citest
+          ADMIN_HASH: ${{ steps.hash.outputs.hash }}
         # The real .env is gitignored. CI generates throwaway credentials so
         # `docker compose up` succeeds without committing secrets to the
         # repo. No *_IMAGE_TAG values on purpose: the compose file's
@@ -246,11 +249,20 @@ jobs:
           TRAEFIK_HOSTNAME=${APP_TRAEFIK_HOSTNAME}
           TRAEFIK_BASIC_AUTH=traefikadmin:\$\$2y\$\$10\$\$sMzJfirKC75x/hVpiINeZOiSm.Jkity9cn4KwNkRvO7hSQVFc5FLO
           DOZZLE_HOSTNAME=${APP_HOSTNAME}
-          DOZZLE_ADMIN_USERNAME=citest
-          DOZZLE_ADMIN_PASSWORD_HASH=${{ steps.hash.outputs.hash }}
           BACKUP_INIT_SLEEP=15s
           BACKUP_INTERVAL=60s
           EOF
+          # The credentials are appended with printf rather than written in the
+          # heredoc above, and that is not a style choice. The heredoc is
+          # unquoted so ${APP_HOSTNAME} expands - and in an unquoted heredoc a
+          # literal $$ is THE SHELL'S PID, not two dollars. The hash arrives
+          # here with every $ doubled for Compose, so `$2a$11$…` came out as
+          # `24972a2497112497…` and Dozzle refused the password against a
+          # user file that looked plausible. printf %s interprets nothing.
+          printf 'DOZZLE_ADMIN_USERNAME=%s\n' "$DOZZLE_TEST_USER" >> .env
+          printf 'DOZZLE_ADMIN_PASSWORD_HASH=%s\n' "$ADMIN_HASH" >> .env
+          grep -c '^DOZZLE_ADMIN_PASSWORD_HASH=[$][$]2[aby][$]' .env > /dev/null \
+            || { echo "::error::the hash was not written as a doubled bcrypt value: $(grep '^DOZZLE_ADMIN_PASSWORD_HASH=' .env | cut -c1-60)"; exit 1; }
           echo "Generated ephemeral .env for CI run"
 
       - name: Upgrade drill — the previous release comes up first, on the volumes this run will upgrade
@@ -373,6 +385,19 @@ jobs:
           [ "$write" = "403" ] || { echo "::error::the proxy answered ${write:-nothing} to a POST; it is not read-only"; exit 1; }
           [ "$read" = "200" ] || { echo "::error::the proxy answered ${read:-nothing} to a GET; Dozzle cannot see containers"; exit 1; }
           echo "the daemon is readable and not writable through the proxy"
+
+          # And Dozzle's own view of it. An allow-list that is too tight leaves
+          # the host `available: false` with no version and no CPU count, while
+          # the same log line still says "Connected to Docker" - which is how
+          # the first run of this job shipped a proxy missing /info without
+          # anything failing. Nothing above would have caught it.
+          if dc logs dozzle 2>&1 | grep -q '"message":"Failed to get docker info"'; then
+            echo "::error::Dozzle could not read the daemon info through the proxy; the allow-list is too tight"
+            dc logs dozzle 2>&1 | grep -m1 'Failed to get docker info'
+            exit 1
+          fi
+          dc logs dozzle 2>&1 | grep -m1 'Adding remote host'
+          echo "Dozzle reports the host without an error"
 
       - name: Verify a backup is produced and valid
         # Log-driven: the file named in a 'backup OK' line has already been

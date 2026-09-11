@@ -66,9 +66,15 @@ services:
       EVENTS: 1
       PING: 1
       VERSION: 1
+      # /info. Dozzle asks for it at startup and, without it, reports the host
+      # as `available: false` with no CPU or memory figures and no daemon
+      # version - while still logging "Connected to Docker", which is what
+      # makes the failure easy to miss. It is a read endpoint: daemon version,
+      # kernel, storage driver, container counts. Nothing here can change the
+      # daemon's state.
+      INFO: 1
       # Pinned to their defaults rather than left unstated, so the posture is
       # auditable by reading this file instead of the image's documentation.
-      INFO: 0
       IMAGES: 0
       NETWORKS: 0
       VOLUMES: 0
