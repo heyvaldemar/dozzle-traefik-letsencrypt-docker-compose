@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _(no unreleased changes yet)_
 
+## [1.0.1] - 2026-09-11
+
+### Fixed
+
+- **The socket proxy is watched and scanned like every other pinned image.** It
+  was added as a fourth image and then left out of both the daily freshness
+  check and the Trivy matrix. A pin nobody watches goes stale in silence, and
+  this is the one container in the stack holding the Docker socket — the last
+  image that should be scanned by nobody.
+
+  Found by the fleet conformance rule that asserts every digest-pinned image
+  has a freshness job behind it. The gap was invisible from inside this
+  repository, where every build was green.
+
 ## [1.0.0] - 2026-09-10
 
 First release. A production deployment of Dozzle behind Traefik, built to the
@@ -89,5 +103,6 @@ fleet standard established in
   seeing nothing, ever. Measured against a response that takes four seconds to
   produce: 0.03s to the first byte without it, 4.15s with it.
 
-[Unreleased]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/releases/tag/v1.0.1
 [1.0.0]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/releases/tag/v1.0.0
