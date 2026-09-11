@@ -1,0 +1,423 @@
+# Image pins live HERE, as interpolation defaults, so `git pull` (or
+# re-downloading this file) delivers the exact version combination this
+# repository has tested — no .env editing required. Setting the matching
+# variable in .env overrides the default for anyone who wants to pin
+# differently; .env itself carries only secrets and deliberate overrides.
+# CI (Trivy scans, check-pin-freshness, the ephemeral test .env) reads
+# the pins from these lines — this block is the single source of truth.
+x-images:
+  traefik: &traefik-image ${TRAEFIK_IMAGE_TAG:-traefik:${TRAEFIK_IMAGE_VERSION:-3.7@sha256:f86a2cab1b5c649070c49f883c743dd32d8485a56e3368c5f93b9e91f1e91259}}
+  dozzle: &dozzle-image ${DOZZLE_IMAGE_TAG:-amir20/dozzle:${DOZZLE_IMAGE_VERSION:-v10.10.0@sha256:2875e3c1f31f2244ee99d6067b53852b30666b3e2fb293d179bc8be94b1da5eb}}
+  dockerproxy: &dockerproxy-image ${DOZZLE_DOCKERPROXY_IMAGE_TAG:-ghcr.io/tecnativa/docker-socket-proxy:${DOZZLE_DOCKERPROXY_IMAGE_VERSION:-v0.5.0@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459}}
+  backups: &backups-image ${DOZZLE_BACKUPS_IMAGE_TAG:-alpine:${DOZZLE_BACKUPS_IMAGE_VERSION:-3.22@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce}}
+
+networks:
+  dozzle-network:
+    external: true
+  traefik-network:
+    external: true
+
+volumes:
+  dozzle-data:
+  dozzle-data-backups:
+  traefik-certificates:
+
+services:
+  # The ONLY container here that touches the Docker socket, and the reason this
+  # template exists in the shape it does.
+  #
+  # Dozzle's own security page is blunt about the usual arrangement: a container
+  # with the Docker socket has, unless restricted, root on the host. `:ro` on
+  # that mount is cosmetic — the API is root-equivalent whichever way the file
+  # is mounted, because the privilege is in what the API can do, not in who can
+  # write the socket file.
+  #
+  # So Dozzle never gets the socket. This proxy holds it and forwards exactly
+  # the endpoints Dozzle needs, over an internal network with nothing published
+  # to the host. POST is denied, which is what makes it read-only: with it off,
+  # a compromised Dozzle can list containers and read logs and cannot start,
+  # stop, delete or exec anything at all.
+  #
+  # Measured rather than assumed, on this stack: GET /containers/json answers
+  # 200, POST /containers/<id>/restart answers 403, and log streaming works.
+  dockerproxy:
+    image: *dockerproxy-image
+    # Hardening: no privilege escalation via setuid binaries
+    security_opt:
+      - no-new-privileges:true
+    # Resource limits as .env-overridable defaults; the override survives every
+    # git pull.
+    deploy:
+      resources:
+        limits:
+          memory: ${DOZZLE_DOCKERPROXY_MEMORY_LIMIT:-64m}
+          cpus: "${DOZZLE_DOCKERPROXY_CPU_LIMIT:-0.5}"
+        reservations:
+          memory: ${DOZZLE_DOCKERPROXY_MEMORY_RESERVATION:-16m}
+          cpus: "${DOZZLE_DOCKERPROXY_CPU_RESERVATION:-0.1}"
+    environment:
+      # Everything Dozzle needs and nothing else. Each of these is an
+      # allow-list entry; the image denies anything not named here.
+      CONTAINERS: 1
+      # POST=0 is what makes this read-only. Turning it on is what
+      # container-actions.override.yml does, deliberately and with the
+      # consequence written down.
+      POST: ${DOZZLE_DOCKERPROXY_POST:-0}
+      EVENTS: 1
+      PING: 1
+      VERSION: 1
+      # Pinned to their defaults rather than left unstated, so the posture is
+      # auditable by reading this file instead of the image's documentation.
+      INFO: 0
+      IMAGES: 0
+      NETWORKS: 0
+      VOLUMES: 0
+      SERVICES: 0
+      TASKS: 0
+      EXEC: 0
+      SECRETS: 0
+      SYSTEM: 0
+      AUTH: 0
+      BUILD: 0
+      COMMIT: 0
+      CONFIGS: 0
+      DISTRIBUTION: 0
+      NODES: 0
+      PLUGINS: 0
+      SESSION: 0
+      SWARM: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - dozzle-network
+    restart: unless-stopped
+
+  # Refuses to let the stack start without a user file, which is the whole
+  # point. Dozzle's default is DOZZLE_AUTH_PROVIDER=none, and none means an
+  # unauthenticated reader of every log line on the host — database
+  # connection strings, tokens printed at startup, the contents of failed
+  # requests. Every compose file that publishes Dozzle and leaves auth alone is
+  # doing that, usually without knowing.
+  #
+  # If /data/users.yml already exists it is left untouched: bring your own,
+  # generated with the command in the README, and this container only checks
+  # that it is there.
+  #
+  # It runs the plain alpine, not the Dozzle image: that image is distroless
+  # and has no shell at all, only the /dozzle binary. Writing four lines of
+  # YAML does not need Dozzle in any case.
+  init-auth:
+    image: *backups-image
+    entrypoint: ["/bin/sh", "-c"]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: ${DOZZLE_INIT_MEMORY_LIMIT:-64m}
+          cpus: "${DOZZLE_INIT_CPU_LIMIT:-0.5}"
+        reservations:
+          memory: ${DOZZLE_INIT_MEMORY_RESERVATION:-8m}
+          cpus: "${DOZZLE_INIT_CPU_RESERVATION:-0.1}"
+    command:
+      - |
+        set -e
+        if [ "$$DOZZLE_AUTH_PROVIDER" != "simple" ]; then
+          echo "auth provider is '$$DOZZLE_AUTH_PROVIDER'; not managing a user file"
+          exit 0
+        fi
+        if [ -s /data/users.yml ]; then
+          echo "/data/users.yml is present; leaving it alone"
+          exit 0
+        fi
+        if [ -z "$$ADMIN_USERNAME" ] || [ -z "$$ADMIN_PASSWORD_HASH" ]; then
+          echo "" >&2
+          echo "ERROR: Dozzle would start with no authentication." >&2
+          echo "" >&2
+          echo "  There is no /data/users.yml, and DOZZLE_ADMIN_USERNAME and" >&2
+          echo "  DOZZLE_ADMIN_PASSWORD_HASH are not both set in .env." >&2
+          echo "" >&2
+          echo "  Dozzle shows every log line from every container on this" >&2
+          echo "  host. That includes connection strings, tokens printed at" >&2
+          echo "  startup, and the bodies of failed requests. Unauthenticated," >&2
+          echo "  it hands all of that to whoever finds the hostname." >&2
+          echo "" >&2
+          echo "  Generate the hash, then put both values in .env:" >&2
+          echo "" >&2
+          echo "    docker run --rm amir20/dozzle:v10.10.0 generate \\" >&2
+          echo "      --name 'Your Name' --email you@example.com \\" >&2
+          echo "      --password 'YOUR_STRONG_PASSWORD' yourusername" >&2
+          echo "" >&2
+          echo "  Copy the 'password:' line from its output into" >&2
+          echo "  DOZZLE_ADMIN_PASSWORD_HASH, doubling every \$$ to \$$\$$ so" >&2
+          echo "  Compose does not try to interpolate it." >&2
+          echo "" >&2
+          exit 1
+        fi
+        printf 'users:\n    %s:\n        email: "%s"\n        name: "%s"\n        password: "%s"\n        filter: ""\n        roles: ""\n' \
+          "$$ADMIN_USERNAME" "$$ADMIN_EMAIL" "$$ADMIN_NAME" "$$ADMIN_PASSWORD_HASH" > /data/users.yml
+        echo "wrote /data/users.yml for $$ADMIN_USERNAME"
+    environment:
+      DOZZLE_AUTH_PROVIDER: ${DOZZLE_AUTH_PROVIDER:-simple}
+      ADMIN_USERNAME: ${DOZZLE_ADMIN_USERNAME:-}
+      ADMIN_EMAIL: ${DOZZLE_ADMIN_EMAIL:-admin@example.com}
+      ADMIN_NAME: ${DOZZLE_ADMIN_NAME:-Administrator}
+      ADMIN_PASSWORD_HASH: ${DOZZLE_ADMIN_PASSWORD_HASH:-}
+    volumes:
+      - dozzle-data:/data
+    networks:
+      - dozzle-network
+    restart: "no"
+
+  dozzle:
+    image: *dozzle-image
+    # Hardening: no privilege escalation via setuid binaries
+    security_opt:
+      - no-new-privileges:true
+    # One Go binary serving HTTP and talking to a TCP endpoint. No Linux
+    # capability is needed for that.
+    cap_drop:
+      - ALL
+    # Per-user interface settings are written to /data on change.
+    stop_grace_period: ${DOZZLE_STOP_GRACE_PERIOD:-60s}
+    # Resource limits as .env-overridable defaults; the override survives every
+    # git pull. Dozzle streams rather than stores, so this stays small.
+    deploy:
+      resources:
+        limits:
+          memory: ${DOZZLE_MEMORY_LIMIT:-256m}
+          cpus: "${DOZZLE_CPU_LIMIT:-1.0}"
+        reservations:
+          memory: ${DOZZLE_MEMORY_RESERVATION:-32m}
+          cpus: "${DOZZLE_CPU_RESERVATION:-0.1}"
+    volumes:
+      # The user file and per-user interface settings. No socket here.
+      - dozzle-data:/data
+    environment:
+      TZ: ${DOZZLE_TZ:-Etc/UTC}
+      # Not a socket path. Dozzle reaches the daemon through the proxy above,
+      # which is what keeps the socket out of this container entirely.
+      DOZZLE_REMOTE_HOST: tcp://dockerproxy:2375
+      # simple = file-based users from /data/users.yml, written by init-auth.
+      DOZZLE_AUTH_PROVIDER: ${DOZZLE_AUTH_PROVIDER:-simple}
+      # The default is a session cookie that dies with the browser. Correct,
+      # and irritating on a phone at two in the morning, which is when this is
+      # actually used.
+      DOZZLE_AUTH_TTL: ${DOZZLE_AUTH_TTL:-48h}
+      # Restart and stop buttons in the log view. OFF by default, and turning
+      # this on alone does nothing: the proxy denies POST, so both halves have
+      # to be changed together. container-actions.override.yml does exactly
+      # that, in one file, with the consequence written down.
+      DOZZLE_ENABLE_ACTIONS: ${DOZZLE_ENABLE_ACTIONS:-false}
+      # An interactive shell inside any container, from the browser. Off, and
+      # there is no override file for it: a restart button is a restart button,
+      # a browser shell into the container holding your database credentials is
+      # arbitrary command execution on your host. You have SSH.
+      DOZZLE_ENABLE_SHELL: "false"
+      DOZZLE_HOSTNAME: ${DOZZLE_DISPLAY_NAME:-docker}
+      DOZZLE_LEVEL: ${DOZZLE_LOG_LEVEL:-info}
+      DOZZLE_NO_ANALYTICS: "true"
+    networks:
+      - dozzle-network
+      - traefik-network
+    healthcheck:
+      test: ["CMD", "/dozzle", "healthcheck"]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+      start_period: 30s
+    labels:
+      # Enable Traefik for this container
+      - "traefik.enable=true"
+      # Match incoming requests on a specific hostname
+      - "traefik.http.routers.dozzle.rule=Host(`${DOZZLE_HOSTNAME:?set in .env - see .env.example}`)"
+      # Assign the router to a named Traefik service
+      - "traefik.http.routers.dozzle.service=dozzle"
+      # Use the 'websecure' (HTTPS) entry point
+      - "traefik.http.routers.dozzle.entrypoints=websecure"
+      # Define the internal container port for routing
+      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+      # Enable TLS on this router
+      - "traefik.http.routers.dozzle.tls=true"
+      # Use Let's Encrypt for certificate management
+      - "traefik.http.routers.dozzle.tls.certresolver=letsencrypt"
+      # Pass the original Host header to the container
+      - "traefik.http.services.dozzle.loadbalancer.passhostheader=true"
+      # Log text compresses extremely well, and this is the one template in the
+      # fleet where the payload IS text.
+      - "traefik.http.middlewares.dozzle-compress.compress=true"
+      - "traefik.http.routers.dozzle.middlewares=dozzle-compress"
+      # THERE IS DELIBERATELY NO BUFFERING MIDDLEWARE HERE. Traefik streams
+      # request and response bodies unless you attach one; attaching it is what
+      # turns buffering ON, and setting its limits to 0 means "no size ceiling",
+      # not "off". A live log tail is a response that never ends, so buffering
+      # it means seeing nothing, ever. Measured against a response that takes
+      # four seconds to produce: 0.03s to the first byte without the
+      # middleware, 4.15s with it.
+      # Specify which Docker network Traefik should use for routing
+      - "traefik.docker.network=traefik-network"
+    restart: unless-stopped
+    depends_on:
+      init-auth:
+        condition: service_completed_successfully
+      dockerproxy:
+        condition: service_started
+      traefik:
+        condition: service_healthy
+
+  traefik:
+    image: *traefik-image
+    # Hardening: no privilege escalation via setuid binaries
+    security_opt:
+      - no-new-privileges:true
+    # Drop every Linux capability; add back only what this image's
+    # entrypoint needs (bind :80/:443).
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    # Resource limits as .env-overridable defaults (e.g. TRAEFIK_MEMORY_LIMIT=2g);
+    # the override survives every git pull.
+    deploy:
+      resources:
+        limits:
+          memory: ${TRAEFIK_MEMORY_LIMIT:-256m}
+          cpus: "${TRAEFIK_CPU_LIMIT:-0.5}"
+        reservations:
+          memory: ${TRAEFIK_MEMORY_RESERVATION:-64m}
+          cpus: "${TRAEFIK_CPU_RESERVATION:-0.1}"
+    command:
+      # Set the log level (DEBUG, INFO, WARN, ERROR)
+      - "--log.level=${TRAEFIK_LOG_LEVEL:-WARN}"
+      # Enable the built-in API and web-based dashboard
+      - "--api.dashboard=true"
+      # Enable the /ping endpoint so we can health-check Traefik
+      - "--ping=true"
+      # Assign the /ping endpoint to a dedicated entry point on port 8082
+      - "--ping.entrypoint=ping"
+      - "--entrypoints.ping.address=:8082"
+      # Define the primary HTTP entry point on port 80
+      - "--entrypoints.web.address=:80"
+      # Define the secure (HTTPS) entry point on port 443
+      - "--entrypoints.websecure.address=:443"
+      # HTTP -> HTTPS redirect at entrypoint level
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      # A log tail is a response that never ends. The idle timeout is what
+      # would close it during a quiet hour, so it is raised well past the
+      # 180-second default.
+      - "--entrypoints.websecure.transport.respondingTimeouts.readTimeout=${DOZZLE_STREAM_TIMEOUT:-0s}"
+      - "--entrypoints.websecure.transport.respondingTimeouts.writeTimeout=${DOZZLE_STREAM_TIMEOUT:-0s}"
+      - "--entrypoints.websecure.transport.respondingTimeouts.idleTimeout=${DOZZLE_IDLE_TIMEOUT:-3600s}"
+      # Enable the Docker provider to detect containers and their labels
+      - "--providers.docker=true"
+      # Point Traefik to the Docker socket
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      # Prevent automatic exposure of all containers; only expose containers
+      # with "traefik.enable=true"
+      - "--providers.docker.exposedbydefault=false"
+      # Use ACME (Let's Encrypt) to generate/renew certificates via TLS challenge
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      # The email address used by Let's Encrypt for renewal notices
+      - "--certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL:?set in .env - see .env.example}"
+      # The file where ACME certificates are stored inside the container
+      - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme/acme.json"
+      # Enable Prometheus metrics
+      - "--metrics.prometheus=true"
+      # Configure Prometheus histogram buckets
+      - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
+      # Check for newer Traefik versions and optionally log that info
+      - "--global.checknewversion=true"
+      # Disable sending anonymous usage data to the Traefik maintainers
+      - "--global.sendanonymoususage=false"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-certificates:/etc/traefik/acme
+    networks:
+      - traefik-network
+    ports:
+      - "80:80"
+      - "443:443"
+    healthcheck:
+      test: ["CMD", "wget", "http://localhost:8082/ping","--spider"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    labels:
+      # Enable Traefik for this container
+      - "traefik.enable=true"
+      # A router to expose the Traefik dashboard
+      - "traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_HOSTNAME:?set in .env - see .env.example}`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      # Basic Authentication for the Traefik dashboard
+      - "traefik.http.routers.dashboard.middlewares=authtraefik"
+      - "traefik.http.middlewares.authtraefik.basicauth.users=${TRAEFIK_BASIC_AUTH:?set in .env - see .env.example for htpasswd generation}"
+      # Specify the internal server port to the dashboard service
+      - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
+      # Pass the original Host header to the backend
+      - "traefik.http.services.dashboard.loadbalancer.passhostheader=true"
+    restart: unless-stopped
+
+  backups:
+    # A plain alpine: /data is a user file and some interface settings, so the
+    # loop needs tar and nothing else.
+    image: *backups-image
+    # Hardening: no privilege escalation via setuid binaries
+    security_opt:
+      - no-new-privileges:true
+    # Drop every Linux capability; add back only what this container needs to
+    # write archives it owns.
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    # Resource limits as .env-overridable defaults; the override survives every
+    # git pull.
+    deploy:
+      resources:
+        limits:
+          memory: ${DOZZLE_BACKUPS_MEMORY_LIMIT:-256m}
+          cpus: "${DOZZLE_BACKUPS_CPU_LIMIT:-0.5}"
+        reservations:
+          memory: ${DOZZLE_BACKUPS_MEMORY_RESERVATION:-16m}
+          cpus: "${DOZZLE_BACKUPS_CPU_RESERVATION:-0.1}"
+    command: >-
+      sh -c 'sleep "$$BACKUP_INIT_SLEEP";
+      while true; do
+        STAMP="$$(date +%Y-%m-%d_%H-%M)";
+        DATA_FILE="$$DATA_BACKUPS_PATH/$$DATA_BACKUP_NAME-$$STAMP.tar.gz";
+        echo "[$$(date -Iseconds)] Starting data backup to $$DATA_FILE";
+        tar -zcpf "$$DATA_FILE.partial" $$DATA_PATH; RC=$$?;
+        if { [ "$$RC" -eq 0 ] || [ "$$RC" -eq 1 ]; } && tar -tzf "$$DATA_FILE.partial" > /dev/null 2>&1; then
+          mv "$$DATA_FILE.partial" "$$DATA_FILE";
+          echo "[$$(date -Iseconds)] Data backup OK: $$DATA_FILE ($$(stat -c %s "$$DATA_FILE") bytes)$$([ "$$RC" -eq 1 ] && echo " - some files changed while being read")";
+        else
+          echo "[$$(date -Iseconds)] Data backup FAILED - partial file kept as $$DATA_FILE.failed for diagnosis" >&2;
+          mv "$$DATA_FILE.partial" "$$DATA_FILE.failed" 2>/dev/null || true;
+        fi;
+        if [ "$${DATA_BACKUP_PRUNE_DAYS:-0}" -ge 1 ]; then
+          find "$$DATA_BACKUPS_PATH" -type f -name "$$DATA_BACKUP_NAME-*" -mtime "+$$DATA_BACKUP_PRUNE_DAYS" -delete;
+        fi;
+        sleep "$$BACKUP_INTERVAL";
+      done'
+    volumes:
+      - dozzle-data:${DATA_PATH:-/data}
+      - dozzle-data-backups:${DATA_BACKUPS_PATH:-/srv/dozzle-data/backups}
+    environment:
+      BACKUP_INIT_SLEEP: ${BACKUP_INIT_SLEEP:-30m}
+      BACKUP_INTERVAL: ${BACKUP_INTERVAL:-24h}
+      DATA_BACKUP_PRUNE_DAYS: ${DATA_BACKUP_PRUNE_DAYS:-7}
+      DATA_BACKUPS_PATH: ${DATA_BACKUPS_PATH:-/srv/dozzle-data/backups}
+      DATA_PATH: ${DATA_PATH:-/data}
+      DATA_BACKUP_NAME: ${DATA_BACKUP_NAME:-dozzle-data-backup}
+    networks:
+      - dozzle-network
+    restart: unless-stopped

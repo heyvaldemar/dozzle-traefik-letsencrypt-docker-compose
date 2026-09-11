@@ -1,0 +1,40 @@
+# Restart and stop buttons in the log view — opt in, because it changes what a
+# compromise of this service costs you.
+#
+# Without this file, the socket proxy denies POST. That is what makes the whole
+# arrangement read-only: Dozzle can list containers and read logs, and it
+# cannot start, stop, delete or exec anything, no matter what its own settings
+# say. Both halves have to change together, which is why they are in one file
+# rather than two variables somebody might set one of.
+#
+# Use it by naming both files:
+#
+#   docker compose \
+#     -f dozzle-traefik-letsencrypt-docker-compose.yml \
+#     -f container-actions.override.yml \
+#     -p dozzle up -d
+#
+# WHAT YOU ARE ACCEPTING
+#   The proxy will forward POST requests to the Docker API. Anyone who reaches
+#   Dozzle as an authenticated user can restart and stop containers; anyone who
+#   finds a way past that authentication can do the same. Read the trace and
+#   bounce the container in the same tab is a real convenience at two in the
+#   morning, and it is a real change to the blast radius.
+#
+#   POST=1 on the proxy is coarser than Dozzle's needs: it permits every POST
+#   endpoint the CONTAINERS allow-list covers, not only restart and stop. The
+#   image has no finer control than that.
+#
+# WHAT IS STILL OFF, AND STAYS OFF
+#   DOZZLE_ENABLE_SHELL. There is no override file for it here on purpose. A
+#   restart button is a restart button; a browser shell inside the container
+#   holding your database credentials is arbitrary command execution on your
+#   host, reachable with one stolen session cookie. You have SSH.
+services:
+  dockerproxy:
+    environment:
+      POST: 1
+
+  dozzle:
+    environment:
+      DOZZLE_ENABLE_ACTIONS: "true"
