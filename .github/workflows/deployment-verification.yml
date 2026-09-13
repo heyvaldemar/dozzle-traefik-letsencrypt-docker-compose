@@ -156,7 +156,7 @@ jobs:
           pin="$(grep -m1 -oE '\$\{DOZZLE_IMAGE_TAG:-.*' dozzle-traefik-letsencrypt-docker-compose.yml | sed -E -e ':a' -e 's/\$\{[A-Z0-9_]+:-([^{}]*)\}/\1/' -e 'ta')"
           ref="${pin%%@*}"; pinned="${ref##*:}"
           latest="$(curl -fsSL --retry 3 -H "Authorization: Bearer $GH_API_TOKEN" https://api.github.com/repos/amir20/dozzle/releases/latest | jq -r .tag_name)"
-          # Dozzle's container tags carry the leading v (v10.10.0), unlike
+          # Dozzle's container tags carry the leading v (v11.0.0), unlike
           # most of this fleet, so the git tag is compared as it comes.
           if [ -z "$latest" ] || [ "$latest" = "null" ]; then
             echo "::error::Could not determine the latest Dozzle release from the GitHub API"

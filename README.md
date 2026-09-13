@@ -21,7 +21,7 @@ docker network create traefik-network
 docker network create dozzle-network
 
 # 3. Generate a password hash for your account
-docker run --rm amir20/dozzle:v10.10.0 generate \
+docker run --rm amir20/dozzle:v11.0.0 generate \
   --name 'Your Name' --email you@example.com \
   --password 'YOUR_STRONG_PASSWORD' yourusername
 
@@ -115,7 +115,7 @@ If you run with the actions override, add it to your own `up` command after the 
 
 Four images pinned to `tag@sha256:<digest>` as interpolation defaults in the compose `x-images` block:
 
-- [`amir20/dozzle`](https://hub.docker.com/r/amir20/dozzle): the application, latest stable (v10.10.0)
+- [`amir20/dozzle`](https://hub.docker.com/r/amir20/dozzle): the application, latest stable (v11.0.0)
 - [`ghcr.io/tecnativa/docker-socket-proxy`](https://github.com/Tecnativa/docker-socket-proxy): the only container that touches the socket
 - [`traefik`](https://hub.docker.com/_/traefik): reverse proxy
 - [`alpine`](https://hub.docker.com/_/alpine): the init container and the backups sidecar
@@ -124,7 +124,7 @@ Four images pinned to `tag@sha256:<digest>` as interpolation defaults in the com
 
 Two override levels exist per image. `<PREFIX>_IMAGE_VERSION` in `.env` swaps only the version of that image (Compose then pulls the tag, without a digest) and leaves every other pin as tested; `<PREFIX>_IMAGE_TAG` replaces the whole reference, digest included. Nested defaults need Docker Compose v2.5 or newer (2022).
 
-The daily `check-pin-freshness` CI job re-resolves each pin against its registry and compares the pinned Dozzle and Traefik versions against the latest upstream releases. Note that Dozzle's container tags carry the leading `v` (`v10.10.0`), unlike most images. GitHub Actions are pinned by commit SHA; Dependabot keeps those fresh.
+The daily `check-pin-freshness` CI job re-resolves each pin against its registry and compares the pinned Dozzle and Traefik versions against the latest upstream releases. Note that Dozzle's container tags carry the leading `v` (`v11.0.0`), unlike most images. GitHub Actions are pinned by commit SHA; Dependabot keeps those fresh.
 
 ## Production checklist
 

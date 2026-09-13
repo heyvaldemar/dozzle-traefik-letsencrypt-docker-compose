@@ -7,7 +7,7 @@
 # the pins from these lines — this block is the single source of truth.
 x-images:
   traefik: &traefik-image ${TRAEFIK_IMAGE_TAG:-traefik:${TRAEFIK_IMAGE_VERSION:-3.7@sha256:f86a2cab1b5c649070c49f883c743dd32d8485a56e3368c5f93b9e91f1e91259}}
-  dozzle: &dozzle-image ${DOZZLE_IMAGE_TAG:-amir20/dozzle:${DOZZLE_IMAGE_VERSION:-v10.10.0@sha256:2875e3c1f31f2244ee99d6067b53852b30666b3e2fb293d179bc8be94b1da5eb}}
+  dozzle: &dozzle-image ${DOZZLE_IMAGE_TAG:-amir20/dozzle:${DOZZLE_IMAGE_VERSION:-v11.0.0@sha256:fa0eeeee9ce13db388eadb7d88ff33285b0a49cf551640f1fe6d408bf6acc5a7}}
   dockerproxy: &dockerproxy-image ${DOZZLE_DOCKERPROXY_IMAGE_TAG:-ghcr.io/tecnativa/docker-socket-proxy:${DOZZLE_DOCKERPROXY_IMAGE_VERSION:-v0.5.0@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459}}
   backups: &backups-image ${DOZZLE_BACKUPS_IMAGE_TAG:-alpine:${DOZZLE_BACKUPS_IMAGE_VERSION:-3.22@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce}}
 
@@ -152,7 +152,7 @@ services:
           echo "" >&2
           echo "  Generate the hash, then put both values in .env:" >&2
           echo "" >&2
-          echo "    docker run --rm amir20/dozzle:v10.10.0 generate \\" >&2
+          echo "    docker run --rm amir20/dozzle:v11.0.0 generate \\" >&2
           echo "      --name 'Your Name' --email you@example.com \\" >&2
           echo "      --password 'YOUR_STRONG_PASSWORD' yourusername" >&2
           echo "" >&2

@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _(no unreleased changes yet)_
 
+## [2.0.0] - 2026-09-13
+
+### Changed
+
+- **Dozzle v11.** A major upstream release: the interface is redesigned, GitHub
+  and OIDC sign-in are added, and the session token changed.
+
+  **Everyone is signed out once after this upgrade.** That is the whole of the
+  user-visible disruption, and it is why this is a major here rather than a
+  minor. Nobody loses access; they log in again.
+
+  The authentication contract this template depends on is unchanged, and that
+  was checked rather than assumed: `users.yml` is still the access allowlist,
+  password login still works, and `docker run amir20/dozzle:v11.0.0 generate`
+  still produces the same file, now with two additional optional fields
+  (`github` and `roles`) that an existing file does not need. The
+  `DOZZLE_ADMIN_USERNAME` and `DOZZLE_ADMIN_PASSWORD_HASH` path is untouched.
+
+  The new sign-in providers are opt-in and this template configures none of
+  them, so a deployment that says nothing about GitHub or OIDC behaves exactly
+  as it did.
+
 ## [1.0.1] - 2026-09-11
 
 ### Fixed
@@ -103,6 +125,7 @@ fleet standard established in
   seeing nothing, ever. Measured against a response that takes four seconds to
   produce: 0.03s to the first byte without it, 4.15s with it.
 
-[Unreleased]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/releases/tag/v2.0.0
 [1.0.1]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/releases/tag/v1.0.1
 [1.0.0]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/releases/tag/v1.0.0
