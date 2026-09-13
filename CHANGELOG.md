@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_(no unreleased changes yet)_
+
+## [1.0.2] - 2026-09-13
+
 ### Changed
 
 - **`amir20/dozzle:v11.0.0` moved to `amir20/dozzle:v11.0.1`.** The freshness check reported the lag; the deploy job booted the stack on the new image before this landed.
