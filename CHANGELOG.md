@@ -9,11 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _(no unreleased changes yet)_
 
-## [1.0.2] - 2026-09-13
+## [2.0.1] - 2026-09-13
 
 ### Changed
 
-- **`amir20/dozzle:v11.0.0` moved to `amir20/dozzle:v11.0.1`.** The freshness check reported the lag; the deploy job booted the stack on the new image before this landed.
+- **Dozzle v11.0.1**, a patch on the v11 line, and the version line put back in
+  order.
+
+  Two releases were cut for this repository within the hour: v2.0.0 here for
+  Dozzle v11, and v1.0.2 by fleet triage for v11.0.1 on top of it. Triage took
+  the next version from the latest GitHub *release* rather than the highest
+  *tag*, and v2.0.0 had a tag without a release page, so it was invisible. The
+  newer content ended up carrying the lower version, and `update.sh`, which
+  sorts tags, would have offered a deployed host v2.0.0 and then called it
+  current. This release puts the highest tag back on the newest content.
+  `[1.0.2]` below is left where it is: it was published and somebody may hold
+  it.
+
+### Fixed
+
+- **The hash-generation command printed by `init-auth` still named v11.0.0**
+  while the pin had moved to v11.0.1. A refusal that tells somebody to run a
+  command against a version they are not deploying is a refusal that wastes
+  their evening. Both places that name the version now move with the pin.
 
 ## [2.0.0] - 2026-09-13
 
@@ -36,6 +54,12 @@ _(no unreleased changes yet)_
   The new sign-in providers are opt-in and this template configures none of
   them, so a deployment that says nothing about GitHub or OIDC behaves exactly
   as it did.
+
+## [1.0.2] - 2026-09-13
+
+### Changed
+
+- **`amir20/dozzle:v11.0.0` moved to `amir20/dozzle:v11.0.1`.** The freshness check reported the lag; the deploy job booted the stack on the new image before this landed.
 
 ## [1.0.1] - 2026-09-11
 
@@ -131,7 +155,8 @@ fleet standard established in
   seeing nothing, ever. Measured against a response that takes four seconds to
   produce: 0.03s to the first byte without it, 4.15s with it.
 
-[Unreleased]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/releases/tag/v2.0.1
 [2.0.0]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/releases/tag/v2.0.0
 [1.0.1]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/releases/tag/v1.0.1
 [1.0.0]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/releases/tag/v1.0.0

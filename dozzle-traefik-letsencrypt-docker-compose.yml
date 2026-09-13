@@ -152,7 +152,7 @@ services:
           echo "" >&2
           echo "  Generate the hash, then put both values in .env:" >&2
           echo "" >&2
-          echo "    docker run --rm amir20/dozzle:v11.0.0 generate \\" >&2
+          echo "    docker run --rm amir20/dozzle:v11.0.1 generate \\" >&2
           echo "      --name 'Your Name' --email you@example.com \\" >&2
           echo "      --password 'YOUR_STRONG_PASSWORD' yourusername" >&2
           echo "" >&2

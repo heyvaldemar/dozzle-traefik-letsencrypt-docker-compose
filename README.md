@@ -21,7 +21,7 @@ docker network create traefik-network
 docker network create dozzle-network
 
 # 3. Generate a password hash for your account
-docker run --rm amir20/dozzle:v11.0.0 generate \
+docker run --rm amir20/dozzle:v11.0.1 generate \
   --name 'Your Name' --email you@example.com \
   --password 'YOUR_STRONG_PASSWORD' yourusername
 
@@ -124,7 +124,7 @@ Four images pinned to `tag@sha256:<digest>` as interpolation defaults in the com
 
 Two override levels exist per image. `<PREFIX>_IMAGE_VERSION` in `.env` swaps only the version of that image (Compose then pulls the tag, without a digest) and leaves every other pin as tested; `<PREFIX>_IMAGE_TAG` replaces the whole reference, digest included. Nested defaults need Docker Compose v2.5 or newer (2022).
 
-The daily `check-pin-freshness` CI job re-resolves each pin against its registry and compares the pinned Dozzle and Traefik versions against the latest upstream releases. Note that Dozzle's container tags carry the leading `v` (`v11.0.0`), unlike most images. GitHub Actions are pinned by commit SHA; Dependabot keeps those fresh.
+The daily `check-pin-freshness` CI job re-resolves each pin against its registry and compares the pinned Dozzle and Traefik versions against the latest upstream releases. Note that Dozzle's container tags carry the leading `v` (`v11.0.1`), unlike most images. GitHub Actions are pinned by commit SHA; Dependabot keeps those fresh.
 
 ## Production checklist
 
