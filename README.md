@@ -115,7 +115,7 @@ If you run with the actions override, add it to your own `up` command after the 
 
 Four images pinned to `tag@sha256:<digest>` as interpolation defaults in the compose `x-images` block:
 
-- [`amir20/dozzle`](https://hub.docker.com/r/amir20/dozzle): the application, latest stable (v11.0.1)
+- [`amir20/dozzle`](https://hub.docker.com/r/amir20/dozzle): the application, latest stable (v11.1.0)
 - [`ghcr.io/tecnativa/docker-socket-proxy`](https://github.com/Tecnativa/docker-socket-proxy): the only container that touches the socket
 - [`traefik`](https://hub.docker.com/_/traefik): reverse proxy
 - [`alpine`](https://hub.docker.com/_/alpine): the init container and the backups sidecar
