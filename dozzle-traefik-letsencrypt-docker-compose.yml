@@ -6,8 +6,8 @@
 # CI (Trivy scans, check-pin-freshness, the ephemeral test .env) reads
 # the pins from these lines — this block is the single source of truth.
 x-images:
-  traefik: &traefik-image ${TRAEFIK_IMAGE_TAG:-traefik:${TRAEFIK_IMAGE_VERSION:-3.7@sha256:1c32e7c368204fd72812152ebdd2ac0425993df6fd982317deb02e48f2d5423c}}
-  dozzle: &dozzle-image ${DOZZLE_IMAGE_TAG:-amir20/dozzle:${DOZZLE_IMAGE_VERSION:-v11.1.0@sha256:7c4fb7f8124f5dea15ade881535cc19cc9a03e66639fd28154ff43a93b78944b}}
+  traefik: &traefik-image ${TRAEFIK_IMAGE_TAG:-traefik:${TRAEFIK_IMAGE_VERSION:-3.7@sha256:24841fe2de7304c149343d877d2923b4c8800a38ba015dea9174c23b20e344a0}}
+  dozzle: &dozzle-image ${DOZZLE_IMAGE_TAG:-amir20/dozzle:${DOZZLE_IMAGE_VERSION:-v11.1.1@sha256:c90494cbc3a9ca959634b89fdb3fdecbcbae1f690d7a567d0d356c6fda1d957c}}
   dockerproxy: &dockerproxy-image ${DOZZLE_DOCKERPROXY_IMAGE_TAG:-ghcr.io/tecnativa/docker-socket-proxy:${DOZZLE_DOCKERPROXY_IMAGE_VERSION:-v0.5.0@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459}}
   backups: &backups-image ${DOZZLE_BACKUPS_IMAGE_TAG:-alpine:${DOZZLE_BACKUPS_IMAGE_VERSION:-3.22@sha256:5291449c3df73caf6ed85e649dec1b9e818b39a5d8c871e97afc13e9cd5e8fa8}}
 
