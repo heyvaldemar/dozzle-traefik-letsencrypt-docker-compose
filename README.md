@@ -148,6 +148,8 @@ chmod +x ./*.sh
 ./dozzle-restore-data.sh
 ```
 
+It lists the backups and asks, or takes a file name as its argument; it reads every path from the running backups container, and CI runs it on every push.
+
 ## Resource limits
 
 Every service carries memory and CPU limits plus reservations as compose-level defaults: the same values CI boots the stack under. They are small because Dozzle is small — it streams rather than stores, so the numbers barely move with the number of containers. Override any of them in `.env` and the override survives every `git pull`. If a service is OOM-killed, `docker inspect <container> --format '{{.State.OOMKilled}}'` says so.
