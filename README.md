@@ -1,6 +1,7 @@
 # Dozzle + Traefik + Let's Encrypt on Docker Compose
 
 [![Deployment Verification](https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/actions/workflows/deployment-verification.yml/badge.svg?branch=main)](https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/actions/workflows/deployment-verification.yml)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14862/badge)](https://www.bestpractices.dev/projects/14862)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This repository deploys Dozzle (live Docker logs for every container, in a browser, with search and multi-container tail) behind Traefik with automatic Let's Encrypt TLS.
