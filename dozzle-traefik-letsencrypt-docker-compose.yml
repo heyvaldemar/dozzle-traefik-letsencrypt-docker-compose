@@ -314,9 +314,9 @@ services:
       # A log tail is a response that never ends. The idle timeout is what
       # would close it during a quiet hour, so it is raised well past the
       # 180-second default.
-      - "--entrypoints.websecure.transport.respondingTimeouts.readTimeout=${DOZZLE_STREAM_TIMEOUT:-0s}"
-      - "--entrypoints.websecure.transport.respondingTimeouts.writeTimeout=${DOZZLE_STREAM_TIMEOUT:-0s}"
-      - "--entrypoints.websecure.transport.respondingTimeouts.idleTimeout=${DOZZLE_IDLE_TIMEOUT:-3600s}"
+      - "--entrypoints.websecure.transport.respondingTimeouts.readTimeout=${TRAEFIK_READ_TIMEOUT:-${DOZZLE_STREAM_TIMEOUT:-0s}}"
+      - "--entrypoints.websecure.transport.respondingTimeouts.writeTimeout=${TRAEFIK_WRITE_TIMEOUT:-${DOZZLE_STREAM_TIMEOUT:-0s}}"
+      - "--entrypoints.websecure.transport.respondingTimeouts.idleTimeout=${TRAEFIK_IDLE_TIMEOUT:-${DOZZLE_IDLE_TIMEOUT:-3600s}}"
       # Enable the Docker provider to detect containers and their labels
       - "--providers.docker=true"
       # Point Traefik to the Docker socket
