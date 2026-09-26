@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_(no unreleased changes yet)_
+
+## [2.1.0] - 2026-09-26
+
 ### Added
 
 - **Traefik's timeouts also answer to the fleet-wide names.**
@@ -208,7 +212,8 @@ fleet standard established in
   seeing nothing, ever. Measured against a response that takes four seconds to
   produce: 0.03s to the first byte without it, 4.15s with it.
 
-[Unreleased]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.0.5...HEAD
+[Unreleased]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.0.6...v2.1.0
 [2.0.5]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.0.3...v2.0.4
 [2.0.3]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.0.2...v2.0.3
