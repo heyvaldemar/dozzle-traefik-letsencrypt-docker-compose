@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`amir20/dozzle:v11.2.0` moved to `amir20/dozzle:v11.3.0`.** The freshness check reported the lag; the deploy job booted the stack on the new image before this landed.
+
 ### Fixed
 
 - **`update.sh` no longer stops without a word when a release adds a variable and no compose file requires one.** The search for `${VAR:?}` came back empty, and under `pipefail` that empty result ended the script with status 1 right after it listed the new variables.
