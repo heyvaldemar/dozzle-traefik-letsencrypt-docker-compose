@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`amir20/dozzle:v11.3.1` moved to `amir20/dozzle:v11.3.2`.** The freshness check reported the lag; the deploy job booted the stack on the new image before this landed.
+
 ### Fixed
 
 - **`.env.example` names the versions the compose file pins**: `DOZZLE_IMAGE_VERSION` from v11.0.1 to v11.3.1. The commented-out examples had fallen behind the pins, so uncommenting one would have downgraded the service. The fleet's conformance check reported it.
