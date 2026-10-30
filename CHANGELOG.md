@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_(no unreleased changes yet)_
+
+## [2.1.18] - 2026-10-30
+
 ### Changed
 
 - **`amir20/dozzle:v11.3.5` moved to `amir20/dozzle:v11.4.0`.** The freshness check reported the lag; the deploy job booted the stack on the new image before this landed.
@@ -342,7 +346,8 @@ fleet standard established in
   seeing nothing, ever. Measured against a response that takes four seconds to
   produce: 0.03s to the first byte without it, 4.15s with it.
 
-[Unreleased]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.1.17...HEAD
+[Unreleased]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.1.18...HEAD
+[2.1.18]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.1.17...v2.1.18
 [2.1.17]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.1.16...v2.1.17
 [2.1.16]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.1.15...v2.1.16
 [2.1.15]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.1.14...v2.1.15
