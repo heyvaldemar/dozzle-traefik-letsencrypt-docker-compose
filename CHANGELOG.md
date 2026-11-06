@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_(no unreleased changes yet)_
+
+## [2.1.22] - 2026-11-06
+
 ### Security
 
 - **`traefik:3.7` was rebuilt upstream**; the pin moved from `sha256:68ae5fe5b64c…` to `sha256:92627e6a99f7…`. Same version, same tag, a rebuilt base image — the usual shape of a security fix in a base layer.
@@ -367,7 +371,8 @@ fleet standard established in
   seeing nothing, ever. Measured against a response that takes four seconds to
   produce: 0.03s to the first byte without it, 4.15s with it.
 
-[Unreleased]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.1.21...HEAD
+[Unreleased]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.1.22...HEAD
+[2.1.22]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.1.21...v2.1.22
 [2.1.21]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.1.20...v2.1.21
 [2.1.20]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.1.19...v2.1.20
 [2.1.19]: https://github.com/heyvaldemar/dozzle-traefik-letsencrypt-docker-compose/compare/v2.1.18...v2.1.19
